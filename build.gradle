@@ -1,0 +1,75 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.3'
+	id 'io.spring.dependency-management' version '1.1.4'
+	id 'com.netflix.dgs.codegen' version '6.0.3'
+	id 'maven-publish'
+}
+
+group = 'com.snsinahub.gradle.demo'
+version = '1.2.0-SNAPSHOT'
+
+java {
+	sourceCompatibility = '17'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+// repositories {
+// 	mavenCentral()
+// }
+repositories {
+	mavenCentral()
+	maven { url "https://plugins.gradle.org/m2/" }
+	gradlePluginPortal()
+	maven {
+		name = "GitHubPackages"
+		url = uri("https://maven.pkg.github.com/snsinahub-org/gradle-spring-boot")
+		credentials {
+			username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+			password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
+		}
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'org.postgresql:postgresql'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+generateJava {
+	schemaPaths = ["${projectDir}/src/main/resources/graphql-client"]
+	packageName = 'com.snsinahub.gradle.demo.codegen'
+	generateClient = true
+}
+
+publishing {
+    repositories {
+        maven {
+            name = 'githubPackages'
+			url = uri('https://maven.pkg.github.com/snsinahub-org/gradle-spring-boot')
+			credentials {
+				username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
+				password = project.findProperty("gpr.key") ?: System.getenv("TOKEN")
+			}
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
